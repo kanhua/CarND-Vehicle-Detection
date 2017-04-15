@@ -27,7 +27,7 @@ def search_windows(img, windows, clf):
         # 3) Extract the test window from original image
         test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))
         # 4) Extract features for that window using single_img_features()
-        tt_img = np.zeros((1, *test_img.shape))
+        tt_img = np.zeros((1, *test_img.shape),dtype='uint8')
         tt_img[0] = test_img
         # 5) Scale extracted features to be fed to classifier
         # 6) Predict using your classifier
@@ -77,16 +77,16 @@ class VehicleIdentifier(object):
     def __init__(self, clf, heat_thres=2):
         self.clf = clf
         self.heat_thres = heat_thres
-        self.window_sizes = [96, 72, 48]
-        self.y_start_stop = [360, None]
+        self.window_sizes = [256,128,96,64]
+        self.y_start_stop = [[484, 676],[384,554],[394,520],[417,550]]
 
     def find_car_windows(self, image):
         # y_start_stop = [470, None]  # Min and max in y to search in slide_window()
 
         windows = []
 
-        for ws in self.window_sizes:
-            add_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=self.y_start_stop,
+        for idx,ws in enumerate(self.window_sizes):
+            add_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=self.y_start_stop[idx],
                                        xy_window=(ws, ws), xy_overlap=(0.5, 0.5))
 
             windows += add_windows

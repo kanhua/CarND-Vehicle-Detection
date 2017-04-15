@@ -46,13 +46,36 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
     # Return the individual histograms, bin_centers and feature vector
     return hist_features
 
+def get_feature_image(image,color_space):
+
+    if color_space != 'RGB':
+        if color_space == 'HSV':
+            feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        elif color_space == 'LUV':
+            feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
+        elif color_space == 'HLS':
+            feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+        elif color_space == 'YUV':
+            feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+        elif color_space == 'YCrCb':
+            feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+    else:
+        feature_image = np.copy(image)
+
+    return feature_image
+
+
 
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
-def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
-                     hist_bins=32, orient=9,
-                     pix_per_cell=8, cell_per_block=2, hog_channel=0,
-                     spatial_feat=True, hist_feat=True, hog_feat=True):
+def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=32, orient=9, pix_per_cell=8,
+                     cell_per_block=2, hog_channel=0, spatial_feat=True, hist_feat=True, hog_feat=True,
+                     hog_color_space='RGB'):
+
+    valid_color_space=['RGB','HSV','LUV','HLS','YUV','YCrCb']
+
+    if color_space not in valid_color_space:
+        raise ValueError("Color space ID is wrong.")
     # Create a list to append feature vectors to
     features = []
     # Iterate through the list of images
@@ -60,20 +83,11 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
         # Read in each one by one
         # apply color conversion if other than 'RGB'
 
-        file_features=[]
-        if color_space != 'RGB':
-            if color_space == 'HSV':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-            elif color_space == 'LUV':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
-            elif color_space == 'HLS':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
-            elif color_space == 'YUV':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
-            elif color_space == 'YCrCb':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
-        else:
-            feature_image = np.copy(image)
+        file_features = []
+
+        feature_image=get_feature_image(image,color_space)
+
+        hog_feature_image=get_feature_image(image,hog_color_space)
 
         if spatial_feat == True:
             spatial_features = bin_spatial(feature_image, size=spatial_size)
@@ -87,12 +101,12 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
             if hog_channel == 'ALL':
                 hog_features = []
                 for channel in range(feature_image.shape[2]):
-                    hog_features.append(get_hog_features(feature_image[:, :, channel],
+                    hog_features.append(get_hog_features(hog_feature_image[:, :, channel],
                                                          orient, pix_per_cell, cell_per_block,
                                                          vis=False, feature_vec=True))
                 hog_features = np.ravel(hog_features)
             else:
-                hog_features = get_hog_features(feature_image[:, :, hog_channel], orient,
+                hog_features = get_hog_features(hog_feature_image[:, :, hog_channel], orient,
                                                 pix_per_cell, cell_per_block, vis=False, feature_vec=True)
             # Append the new feature vector to the features list
             file_features.append(hog_features)
@@ -159,20 +173,20 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     return imcopy
 
 
-
 class FeatureExtractor(TransformerMixin):
-    def __init__(self):
-        pass
+    def __init__(self, color_space='RGB',hog_channel=0,hog_color_space='RGB'):
+        self.color_space = color_space
+        self.hog_channel=hog_channel
+        self.hog_color_space=hog_color_space
 
-    def transform(self,X,y=None):
+    def transform(self, X, y=None):
         spatial = 32
         histbin = 32
-        new_X = extract_features(X, color_space='RGB', spatial_size=(spatial, spatial),
-                                 hist_bins=histbin)
+        new_X = extract_features(X, color_space=self.color_space, spatial_size=(spatial, spatial), hist_bins=histbin,
+                                 hog_channel=self.hog_channel,hog_color_space=self.hog_color_space)
 
         new_X = np.vstack(new_X).astype(np.float64)
         return new_X
 
     def fit(self, X, y=None):
-
         return self

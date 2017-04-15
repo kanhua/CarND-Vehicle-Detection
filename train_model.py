@@ -12,39 +12,32 @@ from utils import FeatureExtractor
 
 
 
-if __name__=="__main__":
 
+if __name__ == "__main__":
     # Read in car and non-car images
 
     all_images, y = load_images()
 
-    all_images,y=shuffle(all_images,y,random_state=0)
+    all_images, y = shuffle(all_images, y, random_state=0)
 
     # Split up data into randomized training and test sets
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(
         all_images, y, test_size=0.2, random_state=rand_state)
 
-    svc_d=LinearSVC()
-    pip_comps=[('fext',FeatureExtractor()),('std',StandardScaler()),('svc',svc_d)]
-    pip=Pipeline(pip_comps)
+    svc_d = LinearSVC(C=0.1, tol=1e-3)
+    fe = FeatureExtractor(color_space='RGB', hog_channel='ALL', hog_color_space='YCrCb')
 
-
+    pip_comps = [('fext', fe), ('std', StandardScaler()), ('svc', svc_d)]
+    pip = Pipeline(pip_comps)
 
     # Create an array stack of feature vectors
     print("Len of X: %s" % X_train.shape[0])
 
-
-
-
-
-
     print("number of car: {}".format(y[y == 1].shape[0]))
     print("number of non-car: {}".format(y[y == 0].shape[0]))
 
-
-
-    #print('Using spatial binning of:', spatial,
+    # print('Using spatial binning of:', spatial,
     #      'and', histbin, 'histogram bins')
 
 
