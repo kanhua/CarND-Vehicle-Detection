@@ -2,7 +2,7 @@ import numpy as np
 import time
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split,GridSearchCV
 from sklearn.utils import shuffle
 from sklearn.pipeline import Pipeline
 import pickle
@@ -12,14 +12,36 @@ from utils import FeatureExtractor
 
 
 
+def find_best_model(all_images,y):
 
-if __name__ == "__main__":
-    # Read in car and non-car images
+    rand_state = np.random.randint(0, 100)
+    X_train, X_test, y_train, y_test = train_test_split(
+        all_images, y, test_size=0.2, random_state=rand_state)
 
-    all_images, y = load_images()
+    svc_c=np.array([0,1,1])
+    svc_total=np.array([1e-4,1e-3,1e-2])
 
-    all_images, y = shuffle(all_images, y, random_state=0)
 
+    color_space_attemps=['RGB','YCrCb','HSV']
+    hog_color_space_attempts=['RGB','YCrCb']
+
+    fe=FeatureExtractor(hog_channel='ALL')
+    svc=LinearSVC()
+
+
+    pip_comps = [('fext', fe), ('std', StandardScaler()), ('svc', svc)]
+    pip = Pipeline(pip_comps)
+
+    gs=GridSearchCV(pip,dict(fext__color_space=color_space_attemps,
+                             fext__hog_color_space=hog_color_space_attempts),verbose=3,cv=5)
+
+    gs.fit(X_train,y_train)
+
+    print(gs.score(X_test,y_test))
+
+
+
+def train_best_model(all_images, y):
     # Split up data into randomized training and test sets
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -60,3 +82,15 @@ if __name__ == "__main__":
 
     with open("final_clf.p", 'wb') as fp:
         pickle.dump(pip, fp)
+
+
+if __name__ == "__main__":
+    # Read in car and non-car images
+
+    all_images, y = load_images()
+
+    all_images, y = shuffle(all_images, y, random_state=0)
+
+    #train_best_model(all_images, y)
+
+    find_best_model(all_images,y)

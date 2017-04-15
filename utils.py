@@ -2,7 +2,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 from skimage.feature import hog
-from sklearn.base import TransformerMixin
+from sklearn.base import TransformerMixin,BaseEstimator
 
 
 # Define a function to return HOG features and visualization
@@ -173,7 +173,7 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     return imcopy
 
 
-class FeatureExtractor(TransformerMixin):
+class FeatureExtractor(BaseEstimator,TransformerMixin):
     def __init__(self, color_space='RGB',hog_channel=0,hog_color_space='RGB'):
         self.color_space = color_space
         self.hog_channel=hog_channel
