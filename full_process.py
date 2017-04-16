@@ -27,7 +27,7 @@ def search_windows(img, windows, clf):
         # 3) Extract the test window from original image
         test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))
         # 4) Extract features for that window using single_img_features()
-        tt_img = np.zeros((1, *test_img.shape),dtype='uint8')
+        tt_img = np.zeros((1, *test_img.shape), dtype='uint8')
         tt_img[0] = test_img
         # 5) Scale extracted features to be fed to classifier
         # 6) Predict using your classifier
@@ -74,20 +74,27 @@ def draw_labeled_bboxes(img, labels):
 
 
 class VehicleIdentifier(object):
-    def __init__(self, clf, heat_thres=2):
+    def __init__(self, clf, heat_thres=2, vis_filename_root=None):
         self.clf = clf
         self.heat_thres = heat_thres
-        self.window_sizes = [256,128,96,64]
-        self.y_start_stop = [[484, 676],[384,554],[394,520],[417,550]]
+        self.window_sizes = [160, 128, 96, 64]
+        self.y_start_stop = [[440, 680], [384, 554], [394, 520], [417, 550]]
+        self.prev_heatmap = []
+        self.max_heatmap_num = 5
+        self.vis_filename_root = vis_filename_root
 
     def find_car_windows(self, image):
         # y_start_stop = [470, None]  # Min and max in y to search in slide_window()
 
         windows = []
 
-        for idx,ws in enumerate(self.window_sizes):
+        for idx, ws in enumerate(self.window_sizes):
+            if self.vis_filename_root is not None:
+                sw_file = self.vis_filename_root + "_ws_%s.jpg" % idx
+            else:
+                sw_file = None
             add_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=self.y_start_stop[idx],
-                                       xy_window=(ws, ws), xy_overlap=(0.5, 0.5))
+                                       xy_window=(ws, ws), xy_overlap=(0.5, 0.5), sliding_window_file=sw_file)
 
             windows += add_windows
 
@@ -104,8 +111,16 @@ class VehicleIdentifier(object):
         # Add heat to each box in box list
         heat = add_heat(heat, hot_windows)
 
+        if self.prev_heatmap:
+            heat += self.prev_heatmap[-1] * 0.8
+
         # Apply threshold to help remove false positives
         heat = apply_threshold(heat, self.heat_thres)
+
+        if len(self.prev_heatmap) > self.max_heatmap_num:
+            self.prev_heatmap.pop(0)
+
+        self.prev_heatmap.append(heat)
 
         # Visualize the heatmap when displaying
         heatmap = np.clip(heat, 0, 255)

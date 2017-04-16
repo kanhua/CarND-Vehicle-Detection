@@ -120,7 +120,7 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=3
 # window size (x and y dimensions),
 # and overlap fraction (for both x and y)
 def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
-                 xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
+                 xy_window=(64, 64), xy_overlap=(0.5, 0.5),sliding_window_file=None):
     # If x and/or y start/stop positions not defined, set to image size
     if x_start_stop[0] == None:
         x_start_stop[0] = 0
@@ -151,13 +151,19 @@ def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
         for xs in range(nx_windows):
             # Calculate window position
             startx = xs * nx_pix_per_step + x_start_stop[0]
-            endx = startx + xy_window[0]
+            endx = min(startx + xy_window[0],x_start_stop[1])
             starty = ys * ny_pix_per_step + y_start_stop[0]
-            endy = starty + xy_window[1]
+            endy = min(starty + xy_window[1],y_start_stop[1])
 
             # Append window position to list
             window_list.append(((startx, starty), (endx, endy)))
     # Return the list of windows
+
+    if sliding_window_file is not None:
+        img_with_box=draw_boxes(img,window_list)
+        img_with_box=draw_boxes(img_with_box,[window_list[0]],color=(255,0,0))
+        cv2.imwrite(sliding_window_file,img_with_box)
+
     return window_list
 
 

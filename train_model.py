@@ -91,6 +91,6 @@ if __name__ == "__main__":
 
     all_images, y = shuffle(all_images, y, random_state=0)
 
-    #train_best_model(all_images, y)
+    train_best_model(all_images, y)
 
-    find_best_model(all_images,y)
+    #find_best_model(all_images,y)
