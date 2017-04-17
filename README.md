@@ -7,6 +7,7 @@ This project identifies the vehicles in photos or videos taken by a camera mount
 
 ![demo_pic](./output_images/test6_fp.jpg)
 
+The final processed video can be viewed or downloaded via the [link].(./output_videos/project_video_output.mp4)
 
 ## Outline of the approach
 
@@ -165,7 +166,7 @@ else:
 ## Result
 
 More processed images can be found in [output_images](./output_images) folder.
-The processed video can be viewed or downloaded via the [link](./output_videos/project_video_output.mp4)
+The processed video can be viewed or downloaded via the [link].(./output_videos/project_video_output.mp4)
 
 
 
