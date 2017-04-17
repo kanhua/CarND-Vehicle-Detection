@@ -60,10 +60,10 @@ def apply_threshold(heatmap, threshold):
 def save_heamap_image(save_file, heatmap, draw_img,
                       raw_heatmap, raw_img_with_box):
     fig = plt.figure()
-    plt.subplot(223)
+    plt.subplot(224)
     plt.imshow(np.flip(draw_img, axis=2))
     plt.title('Car Positions')
-    plt.subplot(224)
+    plt.subplot(223)
     plt.imshow(heatmap, cmap='hot')
     plt.title('Heat Map (after threshold)')
 
@@ -138,13 +138,13 @@ class VehicleIdentifier(object):
 
         if self.add_past:
             if self.prev_heatmap:
-                prev_heat += self.prev_heatmap[-1] * 0.8
-                prev_heat += self.prev_heatmap[-2] * 0.2
+                prev_heat += self.prev_heatmap[-1] * 0.5
+                prev_heat += self.prev_heatmap[-2] * 0.3
+                prev_heat += self.prev_heatmap[-3] * 0.2
             else:
                 self.prev_heatmap = [np.copy(prev_heat) for i in range(self.max_heatmap_num)]
 
-            all_heat = raw_heat * 0.6 + prev_heat * 0.4
-
+            all_heat = raw_heat * 0.5 + prev_heat * 0.5
         else:
             all_heat = raw_heat
 
@@ -157,10 +157,11 @@ class VehicleIdentifier(object):
             self.prev_heatmap.append(raw_heat)
 
         # Visualize the heatmap when displaying
-        heatmap = np.clip(filtered_heat, 0, 255)
+        heatmap = np.clip(filtered_heat, 0, 20)
 
-        raw_heatmap = np.clip(raw_heat, 0, 255)
+        raw_heatmap = np.clip(raw_heat, 0, 20)
 
+        # Draw images with the hot_windows found in the beginning.
         raw_img_with_box = draw_boxes(image, hot_windows)
 
         # Find final boxes from heatmap using label function

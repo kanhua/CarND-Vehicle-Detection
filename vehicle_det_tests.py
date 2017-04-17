@@ -25,7 +25,7 @@ class MyTestCase(unittest.TestCase):
 
         prob_files = glob.glob("./problematic_images/frame*.jpg")
 
-        vif = VehicleIdentifier(self.pip_clf, heat_thres=0)
+        vif = VehicleIdentifier(self.pip_clf, heat_thres=1)
 
         for idx, f in enumerate(prob_files):
             file_dir, fname = split(f)
@@ -41,11 +41,13 @@ class MyTestCase(unittest.TestCase):
 
     def test_images(self):
 
-        vif = VehicleIdentifier(self.pip_clf, heat_thres=0)
+        vif = VehicleIdentifier(self.pip_clf, heat_thres=1)
 
         for idx, f in enumerate(self.files):
             file_dir, fname = split(f)
             fparent, _ = splitext(fname)
+
+            vif.vis_filename_root = join("./output_images", fparent)
 
             image = cv2.imread(f)
             new_image = vif.process_image(image)

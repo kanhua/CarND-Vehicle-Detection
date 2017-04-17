@@ -25,7 +25,7 @@ def find_best_model(all_images,y):
     color_space_attemps=['RGB','YCrCb','HSV']
     hog_color_space_attempts=['RGB','YCrCb']
 
-    fe=FeatureExtractor(hog_channel='ALL')
+    fe= FeatureExtractor(hog_channel='ALL')
     svc=LinearSVC()
 
 
@@ -48,7 +48,7 @@ def train_best_model(all_images, y):
         all_images, y, test_size=0.2, random_state=rand_state)
 
     svc_d = LinearSVC(C=0.1, tol=1e-3)
-    fe = FeatureExtractor(color_space='RGB', hog_channel='ALL', hog_color_space='YCrCb')
+    fe = FeatureExtractor(color_space='RGB', hog_color_space='YCrCb', hog_channel='ALL')
 
     pip_comps = [('fext', fe), ('std', StandardScaler()), ('svc', svc_d)]
     pip = Pipeline(pip_comps)

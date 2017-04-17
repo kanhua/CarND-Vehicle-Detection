@@ -10,7 +10,7 @@ class MyTestCase(unittest.TestCase):
         with open("final_clf.p", 'rb') as fp:
             pip_clf = pickle.load(fp)
 
-        self.vif = VehicleIdentifier(pip_clf, heat_thres=2, add_past=True)
+        self.vif = VehicleIdentifier(pip_clf, heat_thres=1, add_past=True)
 
     def process_video(self,input_video_file,output_video_file):
 

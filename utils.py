@@ -48,6 +48,19 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
 
 
 def get_feature_image(image, color_space):
+    """
+    Convert the image into new color space
+    :param image: input image array
+    :param color_space: string of new color space, e.g. 'RGB'.
+    :return: The transformed image
+    """
+
+    # Sanity check
+    valid_color_space = ['RGB', 'HSV', 'LUV', 'HLS', 'YUV', 'YCrCb']
+
+    if color_space not in valid_color_space:
+        raise ValueError("Color space ID is wrong.")
+
     if color_space != 'RGB':
         if color_space == 'HSV':
             feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -67,13 +80,12 @@ def get_feature_image(image, color_space):
 
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
-def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=32, orient=9, pix_per_cell=8,
-                     cell_per_block=2, hog_channel=0, spatial_feat=True, hist_feat=True, hog_feat=True,
+def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=32,
+                     orient=9, pix_per_cell=8,
+                     cell_per_block=2, hog_channel=0, spatial_feat=True,
+                     hist_feat=True, hog_feat=True,
                      hog_color_space='RGB'):
-    valid_color_space = ['RGB', 'HSV', 'LUV', 'HLS', 'YUV', 'YCrCb']
 
-    if color_space not in valid_color_space:
-        raise ValueError("Color space ID is wrong.")
     # Create a list to append feature vectors to
     features = []
     # Iterate through the list of images
@@ -87,14 +99,14 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=3
 
         hog_feature_image = get_feature_image(image, hog_color_space)
 
-        if spatial_feat == True:
+        if spatial_feat:
             spatial_features = bin_spatial(feature_image, size=spatial_size)
             file_features.append(spatial_features)
-        if hist_feat == True:
+        if hist_feat:
             # Apply color_hist()
             hist_features = color_hist(feature_image, nbins=hist_bins)
             file_features.append(hist_features)
-        if hog_feat == True:
+        if hog_feat:
             # Call get_hog_features() with vis=False, feature_vec=True
             if hog_channel == 'ALL':
                 hog_features = []
@@ -178,16 +190,42 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
 
 
 class FeatureExtractor(BaseEstimator, TransformerMixin):
-    def __init__(self, color_space='RGB', hog_channel=0, hog_color_space='RGB'):
+    def __init__(self, color_space='RGB', hog_color_space='YCrCb', hog_channel="ALL", spatial_size=(32, 32),
+                 hist_bins=32, hog_orient=9, hog_pix_per_cell=8, hog_cell_per_block=2, spatial_feat=True,
+                 hist_feat=True, hog_feat=True):
+        """
+        
+        :param color_space: color space for color and histogram features
+        :param hog_channel: color channels used in HOG
+        :param hog_color_space: integer (0-2) or string 'ALL'. Color space for HOG.
+        :param spatial_size: tuple: (int,int). Resized image size for color features
+        :param hist_bins: bins of color histogram
+        :param hog_orient: orientations of HOG
+        :param hog_pix_per_cell: pixels per block in HOG
+        :param hog_cell_per_block: cells per block in HOG
+        :param spatial_feat: whether including spatial color features
+        :param hist_feat: whether including spatial features
+        :param hog_feat: wheter including HOG feature
+        """
         self.color_space = color_space
         self.hog_channel = hog_channel
         self.hog_color_space = hog_color_space
+        self.spatial_size = spatial_size
+        self.hist_bins = hist_bins
+        self.hog_orient = hog_orient
+        self.hog_pix_per_cell = hog_pix_per_cell
+        self.hog_cell_per_block = hog_cell_per_block
+        self.spatial_feat = spatial_feat
+        self.hist_feat = hist_feat
+        self.hog_feat = hog_feat
 
     def transform(self, X, y=None):
-        spatial = 32
-        histbin = 32
-        new_X = extract_features(X, color_space=self.color_space, spatial_size=(spatial, spatial), hist_bins=histbin,
-                                 hog_channel=self.hog_channel, hog_color_space=self.hog_color_space)
+        new_X = extract_features(X, color_space=self.color_space, spatial_size=self.spatial_size,
+                                 hist_bins=self.hist_bins,
+                                 hog_channel=self.hog_channel, hog_color_space=self.hog_color_space,
+                                 orient=self.hog_orient, pix_per_cell=self.hog_pix_per_cell,
+                                 cell_per_block=self.hog_cell_per_block, spatial_feat=self.spatial_feat,
+                                 hist_feat=self.hist_feat, hog_feat=self.hog_feat)
 
         new_X = np.vstack(new_X).astype(np.float64)
         return new_X
