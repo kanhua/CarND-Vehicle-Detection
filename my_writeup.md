@@ -7,6 +7,18 @@ This project identifies the vehicles in photos or videos taken by a camera mount
 
 ![demo_pic](./output_images/test6_fp.jpg)
 
+
+## Outline of the approach
+
+Our approach for detecting vehicles in an image contains the following steps:
+
+1. Extract features from a labeled dataset to train a machine learning model to identify images with or without vehicles.
+
+2. Pick up small windows inside the test image and test whether these windows have vehicles or not. Label the windows with vehicles as "hot windows".
+
+3. Merge these hot windows and draw them on the images.
+
+
 ## Organization of the code
 
 The code directory is organized as below:
@@ -15,11 +27,12 @@ The code directory is organized as below:
 - [```utils.py```](./utils.py): The core algorithms of feature extraction
 - [```train_model.py```](./train_model): Training the linear SVM model.
 - [```full_process.py```](./full_process.py): Processes of vehicle detection.
+- [```render_video.py```](./render_video.py): Rendering the detection results to a new video.
 
 
 ## Train the classifier to identify vehicle/non-vehicle images.
 
-I use ```Pipeline``` class of sci-kit learn to combine the feature extraction, feature normalization and linear SVC into one single class. The ```Pipeline``` instance contains three class to do this: 
+I used ```Pipeline``` class of sci-kit learn to combine the feature extraction, feature normalization and linear SVM into one single class. The ```Pipeline``` instance contains three class to do this: 
 
 (in ```train_model.py```)
 
@@ -38,7 +51,7 @@ pip = Pipeline(pip_comps)
 
 ### Features in the image
 
-I combine the color histograms and histogram of gradient (HOG) as the features to train the linear SVC.
+I combined the color histograms and histogram of gradient (HOG) as the features to train the linear SVC.
 
 The parameters of these feature extraction are set in the default parameters of ```FeatureExtractor``` class defined in ```utils.py```
 
@@ -65,12 +78,12 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 
 ```
 
-For HOG features, I select ```YCrCb``` as the color space for calculating the color gradients, because it performs better in identifying black cars from the road with black pavements. Using ```YCrCb``` color space also gives better overall accuracy on test dataset (~99%), compared to ~98% yielded by using ```RGB``` as the color space of calculating HOG. The ```FeatureExtractor``` yields 8460 features in total.
+For HOG features, I selected ```YCrCb``` as the color space for calculating the color gradients, because it performs better in identifying black cars against the road with black pavements. Using ```YCrCb``` color space also gives better overall accuracy on test dataset (~99%), compared to ~98% yielded by using ```RGB``` as the color space of calculating HOG. The ```FeatureExtractor``` yields 8460 features in total.
 
 
 ### Linear support vector machine classifier (Linear SVC)
 
-I use the extracted features to train a linear SVC to classify vehicle/non-vehicle images. I tried to varied penalty (C) and tolerance (tot) but I found that the default parameters ```(C=1.0, tol=1e-4)``` perform reasonably well. I thus just use this to train the model. I take 20% of the training data as the test dataset. The accuracy on the test dataset is more than 99%.
+I used the extracted features to train a linear SVC to classify vehicle/non-vehicle images. I tried to varied penalty (C) and tolerance (tot) but I found that the default parameters ```(C=1.0, tol=1e-4)``` perform reasonably well. I thus just used this to train the model. I took 20% of the training data as the test dataset. The accuracy on the test dataset is more than 99%.
 
 I used the labled dataset of [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) prepared by Udacity, which are originally from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/).
 
@@ -79,30 +92,48 @@ The final trained model is saved in ```final_clf.p```.
 
 ## Sliding window search
 
-For each test image, I use small windows to slide through the images, feed each window images into the classifer. The full processes are wrapped in the class ```full_process.VehicleIdentifier```.
+For each test image, I used small windows to slide through the images, feed each window images into the classifer. The full processes are wrapped in the class ```full_process.VehicleIdentifier```.
 
 ### Determining the range and sizes of the windows to search
 
 I use the images provided in [test_images](./test_images) folder as well as some additional images extracted from the given project video to find the suitable search range and window sizes. 
 
-The overlaps of the windows were decided empirically. In general, I give larger window more overlap, but smaller window less overlaps.
+The overlaps of the windows were decided empirically. In general, I gave larger window more overlap, but smaller window less overlaps. Details of the setting and examples are drawn in the follwing image:
 
 ![sliding_windows](./output_images/test6_sw.jpg)
 
 ### Rejecting false positives
 
-I generated a heapmap of the windows that signals positive. I then applying some threshold to filer out the parts in the heatmap with weaker "heat".
-
+I generated a heapmap of the windows that signals positive. I then applied some threshold to fitler out the parts in the heatmap with weaker "heat".
 
 Here's an example of this process flow:
 
 ![window_search_demo](./output_images/test6_heatmap.jpg)
 
 
+I then removed the boxes with very weired width/height ratio. This helps remove some false positive. I implemented this in ```full_process.draw_label_bboxes()```:
+
+
+```python
+def draw_labeled_bboxes(img, labels, ratio_bound=2.5):
+    ....
+        # Discard the resulting box if its shape is out of spec
+        if ratio_bound is not None:
+            bbox_width = np.max(nonzerox) - np.min(nonzerox)
+            bbox_height = np.max(nonzeroy) - np.min(nonzeroy)
+            long_edge = max(bbox_height, bbox_width)
+            short_edge = min(bbox_height, bbox_width)
+            if float(long_edge / short_edge) > ratio_bound:
+                draw_box = False
+
+    .....
+
+```
+
+
+
 
 ## Processing the videos
-
-The processed video can be found in [here](./output_videos/project_video_output.mp4).
 
 To further reduce the false positives in the images and improve the smoothness of vehicle detection, I added up the heatmaps of subsequent frames in the video in order to improve accuracy of detection. My formula of doing this is:
 
