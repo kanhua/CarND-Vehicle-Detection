@@ -2,7 +2,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 from skimage.feature import hog
-from sklearn.base import TransformerMixin,BaseEstimator
+from sklearn.base import TransformerMixin, BaseEstimator
 
 
 # Define a function to return HOG features and visualization
@@ -46,8 +46,8 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
     # Return the individual histograms, bin_centers and feature vector
     return hist_features
 
-def get_feature_image(image,color_space):
 
+def get_feature_image(image, color_space):
     if color_space != 'RGB':
         if color_space == 'HSV':
             feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -65,14 +65,12 @@ def get_feature_image(image,color_space):
     return feature_image
 
 
-
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
 def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=32, orient=9, pix_per_cell=8,
                      cell_per_block=2, hog_channel=0, spatial_feat=True, hist_feat=True, hog_feat=True,
                      hog_color_space='RGB'):
-
-    valid_color_space=['RGB','HSV','LUV','HLS','YUV','YCrCb']
+    valid_color_space = ['RGB', 'HSV', 'LUV', 'HLS', 'YUV', 'YCrCb']
 
     if color_space not in valid_color_space:
         raise ValueError("Color space ID is wrong.")
@@ -85,9 +83,9 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=3
 
         file_features = []
 
-        feature_image=get_feature_image(image,color_space)
+        feature_image = get_feature_image(image, color_space)
 
-        hog_feature_image=get_feature_image(image,hog_color_space)
+        hog_feature_image = get_feature_image(image, hog_color_space)
 
         if spatial_feat == True:
             spatial_features = bin_spatial(feature_image, size=spatial_size)
@@ -120,7 +118,7 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32), hist_bins=3
 # window size (x and y dimensions),
 # and overlap fraction (for both x and y)
 def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
-                 xy_window=(64, 64), xy_overlap=(0.5, 0.5),sliding_window_file=None):
+                 xy_window=(64, 64), xy_overlap=(0.5, 0.5), sliding_window_file=None):
     # If x and/or y start/stop positions not defined, set to image size
     if x_start_stop[0] == None:
         x_start_stop[0] = 0
@@ -151,18 +149,18 @@ def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
         for xs in range(nx_windows):
             # Calculate window position
             startx = xs * nx_pix_per_step + x_start_stop[0]
-            endx = min(startx + xy_window[0],x_start_stop[1])
+            endx = min(startx + xy_window[0], x_start_stop[1])
             starty = ys * ny_pix_per_step + y_start_stop[0]
-            endy = min(starty + xy_window[1],y_start_stop[1])
+            endy = min(starty + xy_window[1], y_start_stop[1])
 
             # Append window position to list
             window_list.append(((startx, starty), (endx, endy)))
     # Return the list of windows
 
     if sliding_window_file is not None:
-        img_with_box=draw_boxes(img,window_list)
-        img_with_box=draw_boxes(img_with_box,[window_list[0]],color=(255,0,0))
-        cv2.imwrite(sliding_window_file,img_with_box)
+        img_with_box = draw_boxes(img, window_list)
+        img_with_box = draw_boxes(img_with_box, [window_list[0]], color=(255, 0, 0))
+        cv2.imwrite(sliding_window_file, img_with_box)
 
     return window_list
 
@@ -179,17 +177,17 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     return imcopy
 
 
-class FeatureExtractor(BaseEstimator,TransformerMixin):
-    def __init__(self, color_space='RGB',hog_channel=0,hog_color_space='RGB'):
+class FeatureExtractor(BaseEstimator, TransformerMixin):
+    def __init__(self, color_space='RGB', hog_channel=0, hog_color_space='RGB'):
         self.color_space = color_space
-        self.hog_channel=hog_channel
-        self.hog_color_space=hog_color_space
+        self.hog_channel = hog_channel
+        self.hog_color_space = hog_color_space
 
     def transform(self, X, y=None):
         spatial = 32
         histbin = 32
         new_X = extract_features(X, color_space=self.color_space, spatial_size=(spatial, spatial), hist_bins=histbin,
-                                 hog_channel=self.hog_channel,hog_color_space=self.hog_color_space)
+                                 hog_channel=self.hog_channel, hog_color_space=self.hog_color_space)
 
         new_X = np.vstack(new_X).astype(np.float64)
         return new_X

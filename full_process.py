@@ -57,6 +57,28 @@ def apply_threshold(heatmap, threshold):
     return heatmap
 
 
+def save_heamap_image(save_file, heatmap, draw_img,
+                      raw_heatmap, raw_img_with_box):
+    fig = plt.figure()
+    plt.subplot(223)
+    plt.imshow(np.flip(draw_img, axis=2))
+    plt.title('Car Positions')
+    plt.subplot(224)
+    plt.imshow(heatmap, cmap='hot')
+    plt.title('Heat Map (after threshold)')
+
+    plt.subplot(221)
+    plt.imshow(raw_heatmap, cmap='hot')
+    plt.title("Raw Heat Map")
+
+    plt.subplot(222)
+    plt.imshow(np.flip(raw_img_with_box, axis=2))
+    plt.title("Hot Windows")
+
+    fig.tight_layout()
+    fig.savefig(save_file)
+
+
 def draw_labeled_bboxes(img, labels):
     # Iterate through all detected cars
     for car_number in range(1, labels[1] + 1):
@@ -74,13 +96,15 @@ def draw_labeled_bboxes(img, labels):
 
 
 class VehicleIdentifier(object):
-    def __init__(self, clf, heat_thres=2, vis_filename_root=None):
+    def __init__(self, clf, heat_thres=2, vis_filename_root=None, add_past=False):
         self.clf = clf
         self.heat_thres = heat_thres
         self.window_sizes = [160, 128, 96, 64]
         self.y_start_stop = [[440, 680], [384, 554], [394, 520], [417, 550]]
+        self.xy_overlap = [(0.6, 0.6), (0.6, 0.6), (0.5, 0.5), (0.5, 0.5)]
         self.prev_heatmap = []
         self.max_heatmap_num = 5
+        self.add_past = add_past
         self.vis_filename_root = vis_filename_root
 
     def find_car_windows(self, image):
@@ -94,7 +118,7 @@ class VehicleIdentifier(object):
             else:
                 sw_file = None
             add_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=self.y_start_stop[idx],
-                                       xy_window=(ws, ws), xy_overlap=(0.5, 0.5), sliding_window_file=sw_file)
+                                       xy_window=(ws, ws), xy_overlap=self.xy_overlap[idx], sliding_window_file=sw_file)
 
             windows += add_windows
 
@@ -107,27 +131,45 @@ class VehicleIdentifier(object):
         return window_img, hot_windows
 
     def gen_heat_map(self, image, hot_windows):
-        heat = np.zeros_like(image[:, :, 0]).astype(np.float)
+        prev_heat = np.zeros_like(image[:, :, 0]).astype(np.float)
+        init_heat = np.copy(prev_heat)
         # Add heat to each box in box list
-        heat = add_heat(heat, hot_windows)
+        raw_heat = add_heat(init_heat, hot_windows)
 
-        if self.prev_heatmap:
-            heat += self.prev_heatmap[-1] * 0.8
+        if self.add_past:
+            if self.prev_heatmap:
+                prev_heat += self.prev_heatmap[-1] * 0.8
+                prev_heat += self.prev_heatmap[-2] * 0.2
+            else:
+                self.prev_heatmap = [np.copy(prev_heat) for i in range(self.max_heatmap_num)]
+
+            all_heat = raw_heat * 0.6 + prev_heat * 0.4
+
+        else:
+            all_heat = raw_heat
 
         # Apply threshold to help remove false positives
-        heat = apply_threshold(heat, self.heat_thres)
+        filtered_heat = apply_threshold(all_heat, self.heat_thres)
 
-        if len(self.prev_heatmap) > self.max_heatmap_num:
+        # Update the queue of heatmap in the last few frames
+        if self.add_past:
             self.prev_heatmap.pop(0)
-
-        self.prev_heatmap.append(heat)
+            self.prev_heatmap.append(raw_heat)
 
         # Visualize the heatmap when displaying
-        heatmap = np.clip(heat, 0, 255)
+        heatmap = np.clip(filtered_heat, 0, 255)
+
+        raw_heatmap = np.clip(raw_heat, 0, 255)
+
+        raw_img_with_box = draw_boxes(image, hot_windows)
 
         # Find final boxes from heatmap using label function
         labels = label(heatmap)
         draw_img = draw_labeled_bboxes(np.copy(image), labels)
+
+        if self.vis_filename_root is not None:
+            save_file = self.vis_filename_root + "_heatmap.jpg"
+            save_heamap_image(save_file, heatmap, draw_img, raw_heatmap, raw_img_with_box)
 
         return heatmap, draw_img
 
@@ -143,7 +185,7 @@ if __name__ == "__main__":
     with open("final_clf.p", 'rb') as fp:
         pip_clf = pickle.load(fp)
 
-    vif = VehicleIdentifier(pip_clf, heat_thres=2)
+    vif = VehicleIdentifier(pip_clf, heat_thres=0)
     # image1 = cv2.imread('./examples/bbox-example-image.jpg')
     image1 = cv2.imread('./test_images/test1.jpg')
 
