@@ -1,11 +1,11 @@
-#Vehicle Detection Project
+# Vehicle Detection Project
 
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 ## Aim of this project
 This project identifies the vehicles in photos or videos taken by a camera mounted on a car.
 
-![demo_pic](./output_images/test_fp_3.jpg)
+![demo_pic](./output_images/test6_fp.jpg)
 
 ## Organization of the code
 
@@ -13,7 +13,7 @@ The code directory is organized as below:
 
 
 - [```utils.py```](./utils.py): The core algorithms of feature extraction
-- [```train_model.py```](./train_model): Training the LinearSVC model.
+- [```train_model.py```](./train_model): Training the linear SVM model.
 - [```full_process.py```](./full_process.py): Processes of vehicle detection.
 
 
@@ -68,12 +68,11 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 For HOG features, I select ```YCrCb``` as the color space for calculating the color gradients, because it performs better in identifying black cars from the road with black pavements. Using ```YCrCb``` color space also gives better overall accuracy on test dataset (~99%), compared to ~98% yielded by using ```RGB``` as the color space of calculating HOG. The ```FeatureExtractor``` yields 8460 features in total.
 
 
-### Linear SVC
+### Linear support vector machine classifier (Linear SVC)
 
-I used ```GridSearchCV``` to find the best model.....
+I use the extracted features to train a linear SVC to classify vehicle/non-vehicle images. I tried to varied penalty (C) and tolerance (tot) but I found that the default parameters ```(C=1.0, tol=1e-4)``` perform reasonably well. I thus just use this to train the model. I take 20% of the training data as the test dataset. The accuracy on the test dataset is more than 99%.
 
-
-### The overall class
+I used the labled dataset of [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) prepared by Udacity, which are originally from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/).
 
 The final trained model is saved in ```final_clf.p```.
 
@@ -88,6 +87,7 @@ I use the images provided in [test_images](./test_images) folder as well as some
 
 The overlaps of the windows were decided empirically. In general, I give larger window more overlap, but smaller window less overlaps.
 
+![sliding_windows](./output_images/test6_sw.jpg)
 
 ### Rejecting false positives
 
@@ -95,11 +95,12 @@ I generated a heapmap of the windows that signals positive. I then applying some
 
 
 Here's an example of this process flow:
+
 ![window_search_demo](./output_images/test6_heatmap.jpg)
 
 
 
-## Video Implmentation
+## Processing the videos
 
 The processed video can be found in [here](./output_videos/project_video_output.mp4).
 
@@ -130,10 +131,22 @@ else:
     all_heat = raw_heat
 ```
 
+## Result
+
+More processed images can be found in [output_images](./output_images) folder.
+The processed video can be viewed or downloaded via the [link](./output_videos/project_video_output.mp4)
+
+
 
 ## Discussion
 
-The approach described above works reasonably well in most of the frames in the video, but occasionally it cannot identifies the vehicles properly (false negative) or wrongly identifies the landlines or fences as vehicles (false positive).
+The approach described above works reasonably well in most of the frames in the video, but occasionally it cannot identifies the vehicles properly (false negative) or wrongly identifies the landlines or fences as vehicles (false positive). Since a robust classifier is the cornerstone of making rubust vehicle identification, I think that further efforts should be invested in improving the image classifer, such as:
+
+1. Including more data: Although the test accuracy of my classifer is >99%, it is very likely this is overfitted because the training dataset contains some time series data. Including other dataset such as [Udacity labeled dataset](https://github.com/udacity/self-driving-car/tree/master/annotations) may help improve the calssifer.
+
+2. Trying out other machine learning models: it could be interesting to use convolutional neural network to implement the image classifer and see whether it gives better results.
+
+3. Use ensemble methods: it could be interesting to mix the results of several different models to determine whether a window image is vehicle or non-vehicle. 
 
 
 

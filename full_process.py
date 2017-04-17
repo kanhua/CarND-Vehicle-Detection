@@ -131,15 +131,29 @@ class VehicleIdentifier(object):
 
         windows = []
 
+        if self.vis_filename_root is not None:
+            rows=np.ceil(len(self.window_sizes)/2).astype(np.int)
+            fig,ax=plt.subplots(ncols=2, nrows=rows)
+
         for idx, ws in enumerate(self.window_sizes):
-            if self.vis_filename_root is not None:
-                sw_file = self.vis_filename_root + "_ws_%s.jpg" % idx
-            else:
-                sw_file = None
+
             add_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=self.y_start_stop[idx],
-                                       xy_window=(ws, ws), xy_overlap=self.xy_overlap[idx], sliding_window_file=sw_file)
+                                       xy_window=(ws, ws), xy_overlap=self.xy_overlap[idx], sliding_window_file=None)
+
+            if self.vis_filename_root is not None:
+                img_with_box = draw_boxes(image, add_windows)
+                img_with_box = draw_boxes(img_with_box, [add_windows[0]], color=(255, 0, 0))
+
+                ax_index=np.unravel_index(idx,(rows,2))
+                ax[ax_index].imshow(np.flip(img_with_box,axis=2))
+                ax[ax_index].set_title("size:{}x{},overlap:({},{})".format(ws,ws,
+                                                                                   self.xy_overlap[idx][0],
+                                                                                   self.xy_overlap[idx][1]))
 
             windows += add_windows
+
+        if self.vis_filename_root is not None:
+            fig.savefig(self.vis_filename_root+"_sw.jpg")
 
         hot_windows = search_windows(image, windows, self.clf)
 

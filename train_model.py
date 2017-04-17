@@ -47,7 +47,8 @@ def train_best_model(all_images, y):
     X_train, X_test, y_train, y_test = train_test_split(
         all_images, y, test_size=0.2, random_state=rand_state)
 
-    svc_d = LinearSVC(C=0.1, tol=1e-3)
+    #svc_d = LinearSVC(C=0.1, tol=1e-3)
+    svc_d=LinearSVC()
     fe = FeatureExtractor(color_space='RGB', hog_color_space='YCrCb', hog_channel='ALL')
 
     pip_comps = [('fext', fe), ('std', StandardScaler()), ('svc', svc_d)]
