@@ -7,7 +7,7 @@ from full_process import VehicleIdentifier
 with open("final_clf.p", 'rb') as fp:
     pip_clf = pickle.load(fp)
 
-vif = VehicleIdentifier(pip_clf, heat_thres=1, add_past=True)
+vif = VehicleIdentifier(pip_clf, heat_thres=1.1, add_past=True)
 
 input_video_file = "./project_video.mp4"
 output_video_file = "./output_videos/project_video_output.mp4"

@@ -65,7 +65,8 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 
 ```
 
-For HOG features, I select ```YCrCb``` as the color space for calculating the color gradients, because it performs better in identifying black cars from the road with black pavements. Using ```YCrCb``` color space also gives better overall accuracy on test dataset (~99%), compared to ~98% yielded by using ```RGB``` as the color space of calculating HOG.
+For HOG features, I select ```YCrCb``` as the color space for calculating the color gradients, because it performs better in identifying black cars from the road with black pavements. Using ```YCrCb``` color space also gives better overall accuracy on test dataset (~99%), compared to ~98% yielded by using ```RGB``` as the color space of calculating HOG. The ```FeatureExtractor``` yields 8460 features in total.
+
 
 ### Linear SVC
 
@@ -79,7 +80,7 @@ The final trained model is saved in ```final_clf.p```.
 
 ## Sliding window search
 
-For each test image, I use small windows to slide through the images, feed each window images into the classifer.
+For each test image, I use small windows to slide through the images, feed each window images into the classifer. The full processes are wrapped in the class ```full_process.VehicleIdentifier```.
 
 ### Determining the range and sizes of the windows to search
 
@@ -91,6 +92,11 @@ The overlaps of the windows were decided empirically. In general, I give larger 
 ### Rejecting false positives
 
 I generated a heapmap of the windows that signals positive. I then applying some threshold to filer out the parts in the heatmap with weaker "heat".
+
+
+Here's an example of this process flow:
+![window_search_demo](./output_images/test6_heatmap.jpg)
+
 
 
 ## Video Implmentation
@@ -124,7 +130,12 @@ else:
     all_heat = raw_heat
 ```
 
+
 ## Discussion
+
+The approach described above works reasonably well in most of the frames in the video, but occasionally it cannot identifies the vehicles properly (false negative) or wrongly identifies the landlines or fences as vehicles (false positive).
+
+
 
 
 

@@ -52,9 +52,10 @@ def add_heat(heatmap, bbox_list):
 
 def apply_threshold(heatmap, threshold):
     # Zero out pixels below the threshold
-    heatmap[heatmap <= threshold] = 0
+    new_heatmap = np.copy(heatmap)
+    new_heatmap[heatmap <= threshold] = 0
     # Return thresholded map
-    return heatmap
+    return new_heatmap
 
 
 def save_heamap_image(save_file, heatmap, draw_img,
@@ -79,7 +80,7 @@ def save_heamap_image(save_file, heatmap, draw_img,
     fig.savefig(save_file)
 
 
-def draw_labeled_bboxes(img, labels):
+def draw_labeled_bboxes(img, labels, ratio_bound=2.5):
     # Iterate through all detected cars
     for car_number in range(1, labels[1] + 1):
         # Find pixels with each car_number label value
@@ -89,19 +90,37 @@ def draw_labeled_bboxes(img, labels):
         nonzerox = np.array(nonzero[1])
         # Define a bounding box based on min/max x and y
         bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+
+        draw_box = True
         # Draw the box on the image
-        cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+
+        # Discard the resulting box if its shape is out of spec
+        if ratio_bound is not None:
+            bbox_width = np.max(nonzerox) - np.min(nonzerox)
+            bbox_height = np.max(nonzeroy) - np.min(nonzeroy)
+            long_edge = max(bbox_height, bbox_width)
+            short_edge = min(bbox_height, bbox_width)
+            if float(long_edge / short_edge) > ratio_bound:
+                draw_box = False
+
+        if draw_box:
+            cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
     # Return the image
     return img
 
 
 class VehicleIdentifier(object):
-    def __init__(self, clf, heat_thres=2, vis_filename_root=None, add_past=False):
+    def __init__(self, clf, heat_thres=2,
+                 vis_filename_root=None, add_past=False,
+                 window_sizes=[160, 128, 96, 64],
+                 xy_over_lap=[(0.6, 0.6), (0.6, 0.6), (0.5, 0.5), (0.5, 0.5)],
+                 y_start_stop=[[440, 680], [384, 554], [394, 520], [417, 550]]
+                 ):
         self.clf = clf
         self.heat_thres = heat_thres
-        self.window_sizes = [160, 128, 96, 64]
-        self.y_start_stop = [[440, 680], [384, 554], [394, 520], [417, 550]]
-        self.xy_overlap = [(0.6, 0.6), (0.6, 0.6), (0.5, 0.5), (0.5, 0.5)]
+        self.window_sizes = window_sizes
+        self.y_start_stop = y_start_stop
+        self.xy_overlap = xy_over_lap
         self.prev_heatmap = []
         self.max_heatmap_num = 5
         self.add_past = add_past

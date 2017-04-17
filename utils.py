@@ -228,6 +228,8 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
                                  hist_feat=self.hist_feat, hog_feat=self.hog_feat)
 
         new_X = np.vstack(new_X).astype(np.float64)
+
+        #print("total features: {}".format(new_X.shape[1]))
         return new_X
 
     def fit(self, X, y=None):

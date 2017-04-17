@@ -12,7 +12,7 @@ from utils import FeatureExtractor
 
 
 
-def find_best_model(all_images,y):
+def find_best_color_feature(all_images,y):
 
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -56,14 +56,12 @@ def train_best_model(all_images, y):
     # Create an array stack of feature vectors
     print("Len of X: %s" % X_train.shape[0])
 
-    print("number of car: {}".format(y[y == 1].shape[0]))
-    print("number of non-car: {}".format(y[y == 0].shape[0]))
+    print("number of car: {}".format(y_train[y_train == 1].shape[0]))
+    print("number of non-car: {}".format(y_train[y_train == 0].shape[0]))
 
     # print('Using spatial binning of:', spatial,
     #      'and', histbin, 'histogram bins')
 
-
-    print('Feature vector length:', len(X_train[0]))
     # Use a linear SVC
     # Check the training time for the SVC
     t = time.time()
@@ -93,4 +91,4 @@ if __name__ == "__main__":
 
     train_best_model(all_images, y)
 
-    #find_best_model(all_images,y)
+    #find_best_color_feature(all_images,y)
